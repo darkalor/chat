@@ -1,6 +1,5 @@
 TODO:
-* usernames (fix)
-* user list
+* finish user list (offline)
 * history
 * 1 to 1 messaging
 * group messaging

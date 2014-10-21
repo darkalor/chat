@@ -24,21 +24,33 @@ class Server():
     def get_connection_list(self):
         return self._connectionList
 
-    def broadcast(self, sock, message, username=None):
+    def broadcast(self, sock, message, sender=None):
         print "Message %s from %s" % (message, sock)
         #Do not send the message to master socket and the client who has send us the message
         for connection in self._connectionList:
             if connection != self._socket and connection != sock:
                 try:
-                    connection.send(username + ": " + message)
-                except Exception as e:
+                    if sender:
+                        connection.send(sender + ": " + message)
+                    else:
+                        connection.send(message)
+                except socket.error as e:
                     # broken socket connection may be, chat client pressed ctrl+c for example
                     connection.close()
                     self._connectionList.remove(connection)
 
+    def send_user_list(self, sock):
+        users = self._userDict.values()
+        sock.send("<users>" + ",".join(users))
+
+    def send_new_user(self, sock, username):
+        self.broadcast(sock, "<users-add>" + username)
+
     def make_offline(self, sock):
+        #TODO: add send user offline (replace broadcast)
         self.broadcast(sock, "Client (%s, %s) is offline" % sock.getpeername())
         print "Client (%s, %s) is offline" % sock.getpeername()
+        del self._userDict[sock.getpeername()]
         sock.close()
         self._connectionList.remove(sock)
 
@@ -50,6 +62,7 @@ class Server():
                 connection, address = self._socket.accept()
                 self._connectionList.append(connection)
                 print "Client (%s, %s) connected" % address
+                self.send_user_list(connection)
             #Some incoming message from a client
             else:
                 # Data received from client, process it
@@ -60,12 +73,9 @@ class Server():
                             self.broadcast(sock, data, self._userDict[sock.getpeername()])
                         else:
                             self._userDict[sock.getpeername()] = data
-                            self.broadcast(sock, "%s entered room" % data)
-                    # TODO: client disconnects for some reason
+                            self.send_new_user(sock, data)
                     else:
                         self.make_offline(sock)
-
-
                 except socket.error:
                     self.make_offline(sock)
 

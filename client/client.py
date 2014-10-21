@@ -11,6 +11,7 @@ class Client(Thread):
         self._host = host
         self._port = port
         self.app = app
+        self.user_list = []
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     def send(self, message):
@@ -41,5 +42,16 @@ class Client(Thread):
                     self.app.display('Disconnected from chat server')
                     sys.exit()
                 else:
-                    #print data
-                    self.app.display(data)
+                    if data.startswith("<users>"):
+                        data = data[7:]
+                        if data:
+                            self.user_list = data.split(",")
+                            self.app.show_users(self.user_list)
+                    elif data.startswith("<users-add>"):
+                        data = data[11:]
+                        self.user_list.append(data)
+                        self.app.display("%s entered room" % data)
+                        self.app.show_users(self.user_list)
+                    else:
+                        #print data
+                        self.app.display(data)
