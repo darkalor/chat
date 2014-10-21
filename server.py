@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import socket
 import select
+import thread
 
 
 class Server():
@@ -30,32 +31,35 @@ class Server():
                     connection.close()
                     self._connectionList.remove(connection)
 
+    def process_socket(self, readSockets):
+        for sock in readSockets:
+            # New connection
+            if sock == self._socket:
+                # Handle the case in which there is a new connection received through server_socket
+                connection, address = self._socket.accept()
+                self._connectionList.append(connection)
+                print "Client (%s, %s) connected" % address
+                self.broadcast(connection, "[%s:%s] entered room\n" % address)
+            #Some incoming message from a client
+            else:
+                # Data received from client, process it
+                data = sock.recv(self._buffer)
+                if data:
+                    # Address of socket (client)
+                    self.broadcast(sock, "\r" + '<' + str(sock.getpeername()) + '> ' + data)
+                else:
+                    self.broadcast(sock, "Client (%s, %s) is offline\n" % address)
+                    print "Client (%s, %s) is offline" % address
+                    sock.close()
+                    self._connectionList.remove(sock)
+
     def run(self):
         while 1:
             # Get the list sockets which are ready to be read through select
             try:
                 readSockets, writeSockets, errorSockets = select.select(self._connectionList, [], [])
+                thread.start_new_thread(self.process_socket, (readSockets,))
 
-                for sock in readSockets:
-                    #New connection
-                    if sock == self._socket:
-                        # Handle the case in which there is a new connection received through server_socket
-                        connection, address = self._socket.accept()
-                        self._connectionList.append(connection)
-                        print "Client (%s, %s) connected" % address
-                        self.broadcast(connection, "[%s:%s] entered room\n" % address)
-                    #Some incoming message from a client
-                    else:
-                        # Data received from client, process it
-                        data = sock.recv(self._buffer)
-                        if data:
-                            # Address of socket (client)
-                            self.broadcast(sock, "\r" + '<' + str(sock.getpeername()) + '> ' + data)
-                        else:
-                            self.broadcast(sock, "Client (%s, %s) is offline\n" % address)
-                            print "Client (%s, %s) is offline" % address
-                            sock.close()
-                            self._connectionList.remove(sock)
             except KeyboardInterrupt:
                 #TODO: socket not closed on ctrl+c
                 print "Exiting"
