@@ -36,7 +36,7 @@ class Server():
                     self._connectionList.remove(connection)
 
     def make_offline(self, sock):
-        self.broadcast(sock, "Client (%s, %s) is offline\n" % sock.getpeername())
+        self.broadcast(sock, "Client (%s, %s) is offline" % sock.getpeername())
         print "Client (%s, %s) is offline" % sock.getpeername()
         sock.close()
         self._connectionList.remove(sock)
@@ -49,7 +49,7 @@ class Server():
                 connection, address = self._socket.accept()
                 self._connectionList.append(connection)
                 print "Client (%s, %s) connected" % address
-                self.broadcast(connection, "[%s:%s] entered room\n" % address)
+                self.broadcast(connection, "[%s:%s] entered room" % address)
             #Some incoming message from a client
             else:
                 # Data received from client, process it
@@ -58,7 +58,7 @@ class Server():
                     if data:
                         # Address of socket (client)
                         #TODO: remove formatting
-                        self.broadcast(sock, "\r" + '<' + str(sock.getpeername()) + '> ' + data)
+                        self.broadcast(sock, '<' + str(sock.getpeername()) + '> ' + data)
                     else:
                         self.make_offline(sock)
                 except socket.error:
