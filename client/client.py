@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import socket
 import select
 import sys
@@ -26,7 +27,8 @@ class Client():
 
         print 'Connected to remote host. Start sending messages'
         self.prompt()
-        socket_list = [sys.stdin, self._socket]
+        #socket_list = [sys.stdin, self._socket]
+        socket_list = [self._socket]
         while 1:
             # Get the list sockets which are readable
             read_sockets, write_sockets, error_sockets = select.select(socket_list, [], [])

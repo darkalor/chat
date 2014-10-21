@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import socket
 import select
-import thread
+from watchdog import Watchdog
 
 
 class Server():
@@ -20,6 +20,9 @@ class Server():
     def __del__(self):
         self._socket.close()
 
+    def get_connection_list(self):
+        return self._connectionList
+
     def broadcast(self, sock, message):
         #Do not send the message to master socket and the client who has send us the message
         for connection in self._connectionList:
@@ -30,6 +33,12 @@ class Server():
                     # broken socket connection may be, chat client pressed ctrl+c for example
                     connection.close()
                     self._connectionList.remove(connection)
+
+    def make_offline(self, sock):
+        self.broadcast(sock, "Client (%s, %s) is offline\n" % sock.getpeername())
+        print "Client (%s, %s) is offline" % sock.getpeername()
+        sock.close()
+        self._connectionList.remove(sock)
 
     def process_socket(self, readSockets):
         for sock in readSockets:
@@ -43,25 +52,24 @@ class Server():
             #Some incoming message from a client
             else:
                 # Data received from client, process it
-                data = sock.recv(self._buffer)
-                if data:
-                    # Address of socket (client)
-                    self.broadcast(sock, "\r" + '<' + str(sock.getpeername()) + '> ' + data)
-                else:
-                    self.broadcast(sock, "Client (%s, %s) is offline\n" % address)
-                    print "Client (%s, %s) is offline" % address
-                    sock.close()
-                    self._connectionList.remove(sock)
+                try:
+                    data = sock.recv(self._buffer)
+                    if data:
+                        # Address of socket (client)
+                        self.broadcast(sock, "\r" + '<' + str(sock.getpeername()) + '> ' + data)
+                    else:
+                        self.make_offline(sock)
+                except socket.error:
+                    self.make_offline(sock)
 
     def run(self):
         while 1:
             # Get the list sockets which are ready to be read through select
             try:
                 readSockets, writeSockets, errorSockets = select.select(self._connectionList, [], [])
-                thread.start_new_thread(self.process_socket, (readSockets,))
 
+                self.process_socket(readSockets)
             except KeyboardInterrupt:
-                #TODO: socket not closed on ctrl+c
                 print "Exiting"
                 self._socket.shutdown(socket.SHUT_RDWR)
                 self._socket.close()
@@ -71,6 +79,9 @@ class Server():
 if __name__ == "__main__":
     port = 5000
     server = Server(port)
+    watchdog = Watchdog(server.get_connection_list())
+    watchdog.setDaemon(True)
+    watchdog.start()
     print "Chat server started on port " + str(port)
     server.run()
 
