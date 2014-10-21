@@ -2,17 +2,19 @@
 import socket
 import select
 import sys
+from threading import Thread
 
 
-class Client():
-    def __init__(self, host, port=5000):
+class Client(Thread):
+    def __init__(self, app, host, port=5000):
+        Thread.__init__(self)
         self._host = host
         self._port = port
+        self.app = app
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    def prompt(self):
-        sys.stdout.write('<You> ')
-        sys.stdout.flush()
+    def send(self, message):
+        self._socket.send(message)
 
     def connect(self):
         self._socket.connect((self._host, self._port))
@@ -22,12 +24,10 @@ class Client():
         try:
             self.connect()
         except:
-            print 'Unable to connect'
+            self.app.display('Unable to connect')
             sys.exit()
 
-        print 'Connected to remote host. Start sending messages'
-        self.prompt()
-        #socket_list = [sys.stdin, self._socket]
+        self.app.display('Connected to remote host. Start sending messages')
         socket_list = [self._socket]
         while 1:
             # Get the list sockets which are readable
@@ -35,26 +35,10 @@ class Client():
 
             for sock in read_sockets:
                 #incoming message from remote server
-                if sock == self._socket:
-                    data = sock.recv(4096)
-                    if not data:
-                        print '\nDisconnected from chat server'
-                        sys.exit()
-                    else:
-                        #print data
-                        sys.stdout.write(data)
-                        self.prompt()
-
-                #user entered a message
+                data = sock.recv(4096)
+                if not data:
+                    self.app.display('Disconnected from chat server')
+                    sys.exit()
                 else:
-                    msg = sys.stdin.readline()
-                    self._socket.send(msg)
-                    self.prompt()
-
-
-#main function
-if __name__ == "__main__":
-    client = Client('localhost', 5000)
-    client.run()
-
-     
+                    #print data
+                    self.app.display(data)

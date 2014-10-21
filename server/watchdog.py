@@ -10,6 +10,6 @@ class Watchdog(Thread):
     def run(self):
         while True:
             for client in self._connection_list:
-                print client
+                #print client
                 time.sleep(1)
 

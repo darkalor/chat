@@ -24,6 +24,7 @@ class Server():
         return self._connectionList
 
     def broadcast(self, sock, message):
+        print "Message %s from %s" % (message, sock)
         #Do not send the message to master socket and the client who has send us the message
         for connection in self._connectionList:
             if connection != self._socket and connection != sock:
@@ -56,6 +57,7 @@ class Server():
                     data = sock.recv(self._buffer)
                     if data:
                         # Address of socket (client)
+                        #TODO: remove formatting
                         self.broadcast(sock, "\r" + '<' + str(sock.getpeername()) + '> ' + data)
                     else:
                         self.make_offline(sock)
@@ -81,7 +83,8 @@ if __name__ == "__main__":
     server = Server(port)
     watchdog = Watchdog(server.get_connection_list())
     watchdog.setDaemon(True)
-    watchdog.start()
+    #TODO: implement
+    #watchdog.start()
     print "Chat server started on port " + str(port)
     server.run()
 
