@@ -7,6 +7,7 @@ from watchdog import Watchdog
 class Server():
 
     _connectionList = []
+    _userDict = {}
 
     def __init__(self, port, buffer=4096):
         self._port = port
@@ -23,13 +24,13 @@ class Server():
     def get_connection_list(self):
         return self._connectionList
 
-    def broadcast(self, sock, message):
+    def broadcast(self, sock, message, username=None):
         print "Message %s from %s" % (message, sock)
         #Do not send the message to master socket and the client who has send us the message
         for connection in self._connectionList:
             if connection != self._socket and connection != sock:
                 try:
-                    connection.send(message)
+                    connection.send(username + ": " + message)
                 except Exception as e:
                     # broken socket connection may be, chat client pressed ctrl+c for example
                     connection.close()
@@ -49,18 +50,22 @@ class Server():
                 connection, address = self._socket.accept()
                 self._connectionList.append(connection)
                 print "Client (%s, %s) connected" % address
-                self.broadcast(connection, "[%s:%s] entered room" % address)
             #Some incoming message from a client
             else:
                 # Data received from client, process it
                 try:
                     data = sock.recv(self._buffer)
                     if data:
-                        # Address of socket (client)
-                        #TODO: remove formatting
-                        self.broadcast(sock, '<' + str(sock.getpeername()) + '> ' + data)
+                        if sock.getpeername() in self._userDict:
+                            self.broadcast(sock, data, self._userDict[sock.getpeername()])
+                        else:
+                            self._userDict[sock.getpeername()] = data
+                            self.broadcast(sock, "%s entered room" % data)
+                    # TODO: client disconnects for some reason
                     else:
                         self.make_offline(sock)
+
+
                 except socket.error:
                     self.make_offline(sock)
 

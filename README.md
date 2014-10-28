@@ -1,7 +1,5 @@
 TODO:
-* text field access from threads
-* usernames
-* accounts
+* usernames (fix)
 * user list
 * history
 * 1 to 1 messaging

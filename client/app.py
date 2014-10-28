@@ -2,29 +2,35 @@ import wx
 from client import Client
 from threading import Lock
 
+#TODO: add locks to chatScreen
 class App(wx.Frame):
+
+    lock = Lock()
 
     def __init__(self):
 
         self.app = wx.App()
         self.client = Client(self, 'localhost', 5000)
 
-        # Set up the main window
-        wx.Frame.__init__(self,
-                          parent=None,
-                          title='wxPython Example',
-                          size=(500, 400),
-                          style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER)
+        user = wx.TextEntryDialog(None, "Login", "Username", "")
+        if user.ShowModal() == wx.ID_OK:
+            self.username = user.GetValue()
 
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        self.chatScreen = wx.TextCtrl(self, style=wx.TE_MULTILINE | wx.TE_READONLY)
-        self.messageBox = wx.TextCtrl(self, style=wx.TE_PROCESS_ENTER, size=(300, 25))
+            # Set up the main window
+            wx.Frame.__init__(self,
+                              parent=None,
+                              title='Chat',
+                              size=(500, 400),
+                              style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER)
 
-        sizer.Add(self.chatScreen, 5, wx.EXPAND)
-        sizer.Add(self.messageBox, 0, wx.EXPAND)
-        self.SetSizer(sizer)
-        self.messageBox.Bind(wx.EVT_TEXT_ENTER, self.send)
-        self.lock = Lock()
+            sizer = wx.BoxSizer(wx.VERTICAL)
+            self.chatScreen = wx.TextCtrl(self, style=wx.TE_MULTILINE | wx.TE_READONLY)
+            self.messageBox = wx.TextCtrl(self, style=wx.TE_PROCESS_ENTER, size=(300, 25))
+
+            sizer.Add(self.chatScreen, 5, wx.EXPAND)
+            sizer.Add(self.messageBox, 0, wx.EXPAND)
+            self.SetSizer(sizer)
+            self.messageBox.Bind(wx.EVT_TEXT_ENTER, self.send)
 
     def get_chat_screen(self):
         with self.lock:

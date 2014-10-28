@@ -23,6 +23,7 @@ class Client(Thread):
     def run(self):
         try:
             self.connect()
+            self.send(self.app.username)
         except:
             self.app.display('Unable to connect')
             sys.exit()
