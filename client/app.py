@@ -1,11 +1,14 @@
 import wx
 from client import Client
-
+from threading import Lock
 
 #TODO: add locks to chatScreen
 class App(wx.Frame):
 
+    lock = Lock()
+
     def __init__(self):
+
         self.app = wx.App()
         self.client = Client(self, 'localhost', 5000)
 
@@ -25,14 +28,23 @@ class App(wx.Frame):
         self.SetSizer(sizer)
         self.messageBox.Bind(wx.EVT_TEXT_ENTER, self.send)
 
+    def get_chat_screen(self):
+        with self.lock:
+            chatScreen = self.chatScreen.GetValue()
+        return chatScreen
+
+    def set_chat_screen(self, message):
+        with self.lock:
+            self.chatScreen.SetValue(message)
+
     def display(self, message):
-        chatText = self.chatScreen.GetValue()
-        self.chatScreen.SetValue(chatText + message + "\n")
+        chatText = self.get_chat_screen()
+        self.set_chat_screen(chatText + message + "\n")
 
     def send(self, event):
         message = self.messageBox.GetValue()
-        chatText = self.chatScreen.GetValue()
-        self.chatScreen.SetValue(chatText + message + "\n")
+        chatText = self.get_chat_screen()
+        self.set_chat_screen(chatText + message + "\n")
         self.chatScreen.SetInsertionPointEnd()
         self.messageBox.SetValue("")
         try:
