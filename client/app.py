@@ -5,24 +5,24 @@ from client import Client
 class App(wx.Frame):
 
     def __init__(self):
-
         self.app = wx.App()
         self.client = Client(self, 'localhost', 5000)
 
-        user = wx.TextEntryDialog(None, "Login", "Username", "")
-        if user.ShowModal() == wx.ID_OK:
-            self.username = user.GetValue()
+        userDialogBox = wx.TextEntryDialog(None, "Login", "Username", "")
+        if userDialogBox.ShowModal() == wx.ID_OK:
+            self.username = userDialogBox.GetValue()
 
             # Set up the main window
             wx.Frame.__init__(self,
                               parent=None,
-                              title='Chat',
+                              title="Python Chat 2000X: " + self.username,
                               size=(500, 400),
                               style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER)
 
             vert_sizer = wx.BoxSizer(wx.VERTICAL)
             self.chatScreen = wx.TextCtrl(self, style=wx.TE_MULTILINE | wx.TE_READONLY)
             self.messageBox = wx.TextCtrl(self, style=wx.TE_PROCESS_ENTER, size=(300, 25))
+            self.messageBox.SetMaxLength(141)  # We're better than twitter
 
             vert_sizer.Add(self.chatScreen, 1, wx.EXPAND)
             vert_sizer.Add(self.messageBox, 0, wx.EXPAND)

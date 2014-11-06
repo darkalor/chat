@@ -52,6 +52,11 @@ class Client(Thread):
                         self.user_list.append(data)
                         self.app.display("%s entered room" % data)
                         self.app.show_users(self.user_list)
+                    elif data.startswith("<users-remove>"):
+                        data = data[14:]
+                        self.user_list.remove(data)
+                        self.app.display("%s left room" % data)
+                        self.app.show_users(self.user_list)
                     else:
                         #print data
                         self.app.display(data)

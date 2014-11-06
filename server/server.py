@@ -46,38 +46,57 @@ class Server():
     def send_new_user(self, sock, username):
         self.broadcast(sock, "<users-add>" + username)
 
+    def send_offline_user(self, sock, username):
+        self.broadcast(sock, "<users-remove>" + username)
+
     def make_offline(self, sock):
-        #TODO: add send user offline (replace broadcast)
-        self.broadcast(sock, "Client (%s, %s) is offline" % sock.getpeername())
+        self.send_offline_user(sock, self._userDict[sock])
         print "Client (%s, %s) is offline" % sock.getpeername()
-        del self._userDict[sock.getpeername()]
+        del self._userDict[sock]
         sock.close()
         self._connectionList.remove(sock)
+
+    def handle_new_connection(self):
+        # Handle the case in which there is a new connection received through server_socket
+        connection, address = self._socket.accept()
+        self._connectionList.append(connection)
+        print "Client (%s, %s) connected" % address
+        self.send_user_list(connection)
+
+    def send_private_message(self, data, sock):
+        list = data.split(" ", 1)
+        receiver = list[0][1:]
+        message = list[1]
+        for conn, username in self._userDict.items():
+            if username == receiver:
+                conn.send("From " + self._userDict[sock] + ": " + message)
+
+    def handle_message(self, sock):
+        try:
+            data = sock.recv(self._buffer)
+            if data:
+                if sock in self._userDict:
+                    if data.startswith("@"):
+                        self.send_private_message(data, sock)
+                    else:
+                        self.broadcast(sock, data, self._userDict[sock])
+                else:
+                    self._userDict[sock] = data
+                    self.send_new_user(sock, data)
+            else:
+                self.make_offline(sock)
+        except socket.error:
+            self.make_offline(sock)
 
     def process_socket(self, readSockets):
         for sock in readSockets:
             # New connection
             if sock == self._socket:
-                # Handle the case in which there is a new connection received through server_socket
-                connection, address = self._socket.accept()
-                self._connectionList.append(connection)
-                print "Client (%s, %s) connected" % address
-                self.send_user_list(connection)
+                self.handle_new_connection()
             #Some incoming message from a client
             else:
                 # Data received from client, process it
-                try:
-                    data = sock.recv(self._buffer)
-                    if data:
-                        if sock.getpeername() in self._userDict:
-                            self.broadcast(sock, data, self._userDict[sock.getpeername()])
-                        else:
-                            self._userDict[sock.getpeername()] = data
-                            self.send_new_user(sock, data)
-                    else:
-                        self.make_offline(sock)
-                except socket.error:
-                    self.make_offline(sock)
+                self.handle_message(sock)
 
     def run(self):
         while 1:
