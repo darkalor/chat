@@ -1,5 +1,6 @@
 import wx
 from client import Client
+from common import MessageType as mt
 
 
 class App(wx.Frame):
@@ -20,7 +21,7 @@ class App(wx.Frame):
                               style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER)
 
             vert_sizer = wx.BoxSizer(wx.VERTICAL)
-            self.chatScreen = wx.TextCtrl(self, style=wx.TE_MULTILINE | wx.TE_READONLY)
+            self.chatScreen = wx.TextCtrl(self, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH)
             self.messageBox = wx.TextCtrl(self, style=wx.TE_PROCESS_ENTER, size=(300, 25))
             self.messageBox.SetMaxLength(141)  # We're better than twitter
 
@@ -41,12 +42,12 @@ class App(wx.Frame):
     def on_close(self, event):
         self.app.ExitMainLoop()
 
-    def _display(self, message):
-        chatText = self.chatScreen.GetValue()
-        self.chatScreen.SetValue(chatText + message + "\n")
+    def _display(self, message, message_type=mt.TEXT):
+        self.chatScreen.SetForegroundColour(message_type)
+        self.chatScreen.AppendText(message + "\n")
 
-    def display(self, message):
-        wx.CallAfter(self._display, message)
+    def display(self, message, message_type=mt.TEXT):
+        wx.CallAfter(self._display, message, message_type)
 
     def _show_users(self, user_list):
         users = "\n".join(user_list)
@@ -57,14 +58,12 @@ class App(wx.Frame):
 
     def send(self, event):
         message = self.messageBox.GetValue()
-        chatText = self.chatScreen.GetValue()
-        self.chatScreen.SetValue(chatText + "You: " + message + "\n")
-        self.chatScreen.SetInsertionPointEnd()
+        self.display("You: " + message)
         self.messageBox.SetValue("")
         try:
             self.client.send(message)
         except Exception as e:
-            self.display("Failed to send")
+            self.display("Failed to send", message_type=mt.ERROR)
 
     def run(self):
         self.client.setDaemon(True)

@@ -3,7 +3,7 @@ import socket
 import select
 import sys
 from threading import Thread
-
+from common import MessageType as mt
 
 class Client(Thread):
     def __init__(self, app, host, port=5000):
@@ -26,10 +26,9 @@ class Client(Thread):
             self.connect()
             self.send(self.app.username)
         except:
-            self.app.display('Unable to connect')
+            self.app.display('Unable to connect', message_type=mt.ERROR)
             sys.exit()
 
-        self.app.display('Connected to remote host. Start sending messages')
         socket_list = [self._socket]
         while 1:
             # Get the list sockets which are readable
@@ -39,23 +38,29 @@ class Client(Thread):
                 #incoming message from remote server
                 data = sock.recv(4096)
                 if not data:
-                    self.app.display('Disconnected from chat server')
+                    self.app.display('Disconnected from chat server', message_type=mt.ERROR)
                     sys.exit()
                 else:
                     if data.startswith("<users>"):
-                        data = data[7:]
-                        if data:
-                            self.user_list = data.split(",")
+                        list = data.split("<history>")
+                        users = list[0]
+                        history = list[1]
+                        users = users[7:]
+                        if users:
+                            self.user_list = users.split(",")
                             self.app.show_users(self.user_list)
+                        if history:
+                            self.app.display(history, message_type=mt.HISTORY)
+                        self.app.display('Welcome to the chat!', message_type=mt.INFO)
                     elif data.startswith("<users-add>"):
                         data = data[11:]
                         self.user_list.append(data)
-                        self.app.display("%s entered room" % data)
+                        self.app.display("%s entered room" % data, message_type=mt.INFO)
                         self.app.show_users(self.user_list)
                     elif data.startswith("<users-remove>"):
                         data = data[14:]
                         self.user_list.remove(data)
-                        self.app.display("%s left room" % data)
+                        self.app.display("%s left room" % data, message_type=mt.INFO)
                         self.app.show_users(self.user_list)
                     else:
                         #print data
