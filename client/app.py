@@ -8,9 +8,9 @@ class App(wx.Frame):
         self.app = wx.App()
         self.client = Client(self, 'localhost', 5000)
 
-        userDialogBox = wx.TextEntryDialog(None, "Login", "Username", "")
-        if userDialogBox.ShowModal() == wx.ID_OK:
-            self.username = userDialogBox.GetValue()
+        user_dialog_box = wx.TextEntryDialog(None, "Login", "Username", "")
+        if user_dialog_box.ShowModal() == wx.ID_OK:
+            self.username = user_dialog_box.GetValue()
 
             # Set up the main window
             wx.Frame.__init__(self,
@@ -42,8 +42,8 @@ class App(wx.Frame):
         self.app.ExitMainLoop()
 
     def _display(self, message):
-        chatText = self.chatScreen.GetValue()
-        self.chatScreen.SetValue(chatText + message + "\n")
+        char_text = self.chatScreen.GetValue()
+        self.chatScreen.SetValue(char_text + message + "\n")
 
     def display(self, message):
         wx.CallAfter(self._display, message)
@@ -57,8 +57,8 @@ class App(wx.Frame):
 
     def send(self, event):
         message = self.messageBox.GetValue()
-        chatText = self.chatScreen.GetValue()
-        self.chatScreen.SetValue(chatText + "You: " + message + "\n")
+        char_text = self.chatScreen.GetValue()
+        self.chatScreen.SetValue(char_text + "You: " + message + "\n")
         self.chatScreen.SetInsertionPointEnd()
         self.messageBox.SetValue("")
         try:
