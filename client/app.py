@@ -9,9 +9,9 @@ class App(wx.Frame):
         self.app = wx.App()
         self.client = Client(self, 'localhost', 5000)
 
-        userDialogBox = wx.TextEntryDialog(None, "Login", "Username", "")
-        if userDialogBox.ShowModal() == wx.ID_OK:
-            self.username = userDialogBox.GetValue()
+        user_dialog_box = wx.TextEntryDialog(None, "Login", "Username", "")
+        if user_dialog_box.ShowModal() == wx.ID_OK:
+            self.username = user_dialog_box.GetValue()
 
             # Set up the main window
             wx.Frame.__init__(self,
