@@ -3,7 +3,14 @@ import socket
 import select
 from collections import deque
 from watchdog import Watchdog
+import logging
 
+logger = logging.getLogger('server')
+file_handler = logging.FileHandler('server.log')
+file_handler.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
 
 class Server():
 
@@ -21,12 +28,14 @@ class Server():
         self._connection_list.append(self._socket)
 
     def __del__(self):
+        logger.info("Deleting socket object")
         self._socket.close()
 
     def get_connection_list(self):
         return self._connection_list
 
     def broadcast(self, sock, message, sender=None):
+        logger.info("Broadcasting message")
         # Append username if it is a message from other user
         if sender:
             message = sender + ": " + message
@@ -35,43 +44,48 @@ class Server():
         for connection in self._connection_list:
             if connection != self._socket and connection != sock:
                 try:
-                        connection.send(message)
+                    logger.info("Sending message to: %s" % connection)
+                    connection.send(message)
                 except socket.error:
                     # broken socket connection may be, chat client pressed ctrl+c for example
+                    logger.info("Closing socket connection")
                     connection.close()
                     self._connection_list.remove(connection)
 
-    def send_user_list(self, sock):
-        users = self._user_dict.values()
-        sock.send("<users>" + ",".join(users))
-
     def send_new_user(self, sock, username):
+        logger.info("Broadcasting about new user: %s" % username)
         self.broadcast(sock, "<users-add>" + username)
 
     def send_offline_user(self, sock, username):
+        logger.info("Broadcasting about removing user: %s" % username)
         self.broadcast(sock, "<users-remove>" + username)
 
     def make_offline(self, sock):
+        logger.info("User went offline: %s" % sock)
         self.send_offline_user(sock, self._user_dict[sock])
         del self._user_dict[sock]
         sock.close()
         self._connection_list.remove(sock)
 
-    def send_chat_history(self, sock):
-        sock.send("<history>" + "\n".join(self._chat_history))
+    def send_user_list_and_history(self, sock):
+        logger.info("Broadcasting user list and chat history to new user: %s" % sock)
+        users = self._user_dict.values()
+        history = "<history>" + "\n".join(self._chat_history)
+        sock.send("<users>" + ",".join(users) + history)
 
     def handle_new_connection(self):
         # Handle the case in which there is a new connection received through server_socket
         connection, address = self._socket.accept()
         self._connection_list.append(connection)
-        print "Client (%s, %s) connected" % address
-        self.send_user_list(connection)
-        self.send_chat_history(connection)
+        logger.info("Client (%s, %s) connected" % address)
+        self.send_user_list_and_history(connection)
+        #self.send_chat_history(connection)
 
     def send_private_message(self, data, sock):
         list = data.split(" ", 1)
         receiver = list[0][1:]
         message = list[1]
+        logger.info("Sending private message from: %s to %s" % sock, receiver)
         for conn, username in self._user_dict.items():
             if username == receiver:
                 conn.send("From " + self._user_dict[sock] + ": " + message)
@@ -115,7 +129,7 @@ class Server():
                 read_sockets, write_sockets, error_sockets = select.select(self._connection_list, [], [])
                 self.process_socket(read_sockets)
             except KeyboardInterrupt:
-                print "Exiting"
+                logger.info("Exiting")
                 self._socket.shutdown(socket.SHUT_RDWR)
                 self._socket.close()
                 exit()
@@ -128,5 +142,5 @@ if __name__ == "__main__":
     watchdog.setDaemon(True)
     #TODO: implement
     #watchdog.start()
-    print "Chat server started on port " + str(port)
+    logging.info("Chat server started on port " + str(port))
     server.run()

@@ -1,5 +1,6 @@
 TODO:
 * username char limit + no special chars in username
+* different text colors between windows
 * encryption
 * logging
 
