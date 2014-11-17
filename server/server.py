@@ -8,20 +8,26 @@ import logging
 logger = logging.getLogger('server')
 
 
+class Singleton(type):
+    def __init__(cls, name, bases, dict):
+        super(Singleton, cls).__init__(name, bases, dict)
+        cls.instance = None
+
+    def __call__(cls, *args, **kw):
+        if cls.instance is None:
+            cls.instance = super(Singleton, cls).__call__(*args, **kw)
+        return cls.instance
+
+
 class Server(object):
     # Singleton
+    __metaclass__ = Singleton
+
     _instance = None
     _connection_list = []
     _user_dict = {}
     _user_keys = {}
     _chat_history = deque(maxlen=10)
-
-    # Singleton
-    def __new__(cls, *args, **kwargs):
-        if not cls._instance:
-            cls._instance = super(Server, cls).__new__(
-                                cls, *args, **kwargs)
-        return cls._instance
 
     def __init__(self, port, buffer=4096):
         self._port = port
@@ -99,13 +105,13 @@ class Server(object):
             data = sock.recv(self._buffer)
             if data:
                 if sock in self._user_dict:
-                    # Private message
+                    # Private message - "@username message"
                     if data.startswith("@"):
                         self.send_private_message(data, sock)
-                    # Broadcast message
+                    # Broadcast message - "message"
                     else:
                         self.broadcast(sock, data, self._user_dict[sock])
-                # New user
+                # New user - "username"
                 else:
                     #list = data.split('<end>')
                     self._user_dict[sock] = data
