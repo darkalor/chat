@@ -6,11 +6,7 @@ from watchdog import Watchdog
 import logging
 
 logger = logging.getLogger('server')
-file_handler = logging.FileHandler('server.log')
-file_handler.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
+
 
 class Server():
 
@@ -53,11 +49,11 @@ class Server():
                     self._connection_list.remove(connection)
 
     def send_new_user(self, sock, username):
-        logger.info("Broadcasting about new user: %s" % username)
+        logger.debug("Broadcasting about new user: %s" % username)
         self.broadcast(sock, "<users-add>" + username)
 
     def send_offline_user(self, sock, username):
-        logger.info("Broadcasting about removing user: %s" % username)
+        logger.debug("Broadcasting about removing user: %s" % username)
         self.broadcast(sock, "<users-remove>" + username)
 
     def make_offline(self, sock):
@@ -68,7 +64,7 @@ class Server():
         self._connection_list.remove(sock)
 
     def send_user_list_and_history(self, sock):
-        logger.info("Broadcasting user list and chat history to new user: %s" % sock)
+        logger.debug("Broadcasting user list and chat history to new user: %s" % sock)
         users = self._user_dict.values()
         history = "<history>" + "\n".join(self._chat_history)
         sock.send("<users>" + ",".join(users) + history)
@@ -85,7 +81,7 @@ class Server():
         list = data.split(" ", 1)
         receiver = list[0][1:]
         message = list[1]
-        logger.info("Sending private message from: %s to %s" % sock, receiver)
+        logger.debug("Sending private message from: %s to %s" % sock, receiver)
         for conn, username in self._user_dict.items():
             if username == receiver:
                 conn.send("From " + self._user_dict[sock] + ": " + message)
@@ -136,11 +132,16 @@ class Server():
 
 
 if __name__ == "__main__":
+    file_handler = logging.FileHandler('server.log')
+    logger.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
     port = 5000
     server = Server(port)
     watchdog = Watchdog(server.get_connection_list())
     watchdog.setDaemon(True)
     #TODO: implement
     #watchdog.start()
-    logging.info("Chat server started on port " + str(port))
+    logger.info("Chat server started on port " + str(port))
     server.run()

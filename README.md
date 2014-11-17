@@ -1,9 +1,7 @@
 TODO:
-* username char limit + no special chars in username
-* different text colors between windows
+* bug: username char limit + no special chars in username
+* bug: different text colors between windows
 * encryption
-* logging
-
 
 Some other time:
 * delivery report
