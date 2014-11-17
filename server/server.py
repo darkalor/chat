@@ -9,7 +9,7 @@ logger = logging.getLogger('server')
 
 
 class Server():
-
+    # TODO: add singleton here. don't ask why
     _connection_list = []
     _user_dict = {}
     _chat_history = deque(maxlen=10)
