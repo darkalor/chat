@@ -1,13 +1,17 @@
 import wx
-from client import Client
+from client  import Client
+from log_client import LogClient
+from log_app import LogApp
+from iapp import IApp
 from common import MessageType as mt
 
 
-class App(wx.Frame):
+class App(wx.Frame, IApp):
 
     def __init__(self):
         self.app = wx.App()
-        self.client = Client(self, 'localhost', 5000)
+        log_app = LogApp(self)
+        self.client = LogClient(Client(log_app, 'localhost', 5000))
 
         user_dialog_box = wx.TextEntryDialog(None, "Login", "Username", "")
         if user_dialog_box.ShowModal() == wx.ID_OK:
@@ -39,10 +43,13 @@ class App(wx.Frame):
 
             self.Bind(wx.EVT_CLOSE, self.on_close)
 
+    def get_username(self):
+        return self.username
+
     def on_close(self, event):
         self.app.ExitMainLoop()
 
-    def _display(self, message, message_type=mt.TEXT):
+    def _display(self, message, message_type):
         self.chatScreen.SetForegroundColour(message_type)
         self.chatScreen.AppendText(message + "\n")
 

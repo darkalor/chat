@@ -2,10 +2,13 @@
 import socket
 import select
 import sys
+import rsa
 from threading import Thread
 from common import MessageType as mt
+from iclient import IClient
 
-class Client(Thread):
+
+class Client(Thread, IClient):
     def __init__(self, app, host, port=5000):
         Thread.__init__(self)
         self._host = host
@@ -13,6 +16,7 @@ class Client(Thread):
         self.app = app
         self.user_list = []
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.public_key, self.private_key = rsa.newkeys(512)
 
     def send(self, message):
         self._socket.send(message)
@@ -24,8 +28,10 @@ class Client(Thread):
     def run(self):
         try:
             self.connect()
-            self.send(self.app.username)
-        except:
+            # TODO: move username later
+            self.send(self.app.get_username() + '<end>' + str(self.public_key.n) + '<end>' + str(self.public_key.e))
+        except Exception as e:
+            print e
             self.app.display('Unable to connect', message_type=mt.ERROR)
             sys.exit()
 

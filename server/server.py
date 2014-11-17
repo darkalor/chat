@@ -1,8 +1,8 @@
 #!/usr/bin/python
 import socket
 import select
+import rsa
 from collections import deque
-from watchdog import Watchdog
 import logging
 
 logger = logging.getLogger('server')
@@ -12,6 +12,7 @@ class Server():
     # TODO: add singleton here. don't ask why
     _connection_list = []
     _user_dict = {}
+    _user_keys = {}
     _chat_history = deque(maxlen=10)
 
     def __init__(self, port, buffer=4096):
@@ -22,10 +23,7 @@ class Server():
         self._socket.bind(("0.0.0.0", self._port))
         self._socket.listen(10)
         self._connection_list.append(self._socket)
-
-    def __del__(self):
-        logger.info("Deleting socket object")
-        self._socket.close()
+        self.public_key, self.private_key = rsa.newkeys(512)
 
     def get_connection_list(self):
         return self._connection_list
@@ -48,7 +46,7 @@ class Server():
                     connection.close()
                     self._connection_list.remove(connection)
 
-    def send_new_user(self, sock, username):
+    def broadcast_new_user(self, sock, username):
         logger.debug("Broadcasting about new user: %s" % username)
         self.broadcast(sock, "<users-add>" + username)
 
@@ -74,8 +72,7 @@ class Server():
         connection, address = self._socket.accept()
         self._connection_list.append(connection)
         logger.info("Client (%s, %s) connected" % address)
-        self.send_user_list_and_history(connection)
-        #self.send_chat_history(connection)
+        #self.send_key(connection)
 
     def send_private_message(self, data, sock):
         list = data.split(" ", 1)
@@ -86,6 +83,9 @@ class Server():
             if username == receiver:
                 conn.send("From " + self._user_dict[sock] + ": " + message)
 
+    def send_key(self, sock):
+        sock.send('<key>' + str(self.public_key.n) + '<key>' + str(self.public_key.e))
+
     def handle_message(self, sock):
         try:
             data = sock.recv(self._buffer)
@@ -94,13 +94,16 @@ class Server():
                     # Private message
                     if data.startswith("@"):
                         self.send_private_message(data, sock)
-                    # Broadcastg message
+                    # Broadcast message
                     else:
                         self.broadcast(sock, data, self._user_dict[sock])
                 # New user
                 else:
-                    self._user_dict[sock] = data
-                    self.send_new_user(sock, data)
+                    list = data.split('<end>')
+                    self._user_dict[sock] = list[0]
+                    self._user_keys[sock] = rsa.PublicKey(list[1], list[2])
+                    self.broadcast_new_user(sock, list[0])
+                    self.send_user_list_and_history(sock)
             # User disconnected
             else:
                 self.make_offline(sock)
@@ -139,9 +142,9 @@ if __name__ == "__main__":
     logger.addHandler(file_handler)
     port = 5000
     server = Server(port)
-    watchdog = Watchdog(server.get_connection_list())
-    watchdog.setDaemon(True)
-    #TODO: implement
-    #watchdog.start()
+    # TODO: implement
+    # watchdog = Watchdog(server.get_connection_list())
+    # watchdog.setDaemon(True)
+    # watchdog.start()
     logger.info("Chat server started on port " + str(port))
     server.run()
