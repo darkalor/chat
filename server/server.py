@@ -1,19 +1,27 @@
 #!/usr/bin/python
 import socket
 import select
-import rsa
+#import rsa
 from collections import deque
 import logging
 
 logger = logging.getLogger('server')
 
 
-class Server():
-    # TODO: add singleton here. don't ask why
+class Server(object):
+    # Singleton
+    _instance = None
     _connection_list = []
     _user_dict = {}
     _user_keys = {}
     _chat_history = deque(maxlen=10)
+
+    # Singleton
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super(Server, cls).__new__(
+                                cls, *args, **kwargs)
+        return cls._instance
 
     def __init__(self, port, buffer=4096):
         self._port = port
@@ -23,7 +31,7 @@ class Server():
         self._socket.bind(("0.0.0.0", self._port))
         self._socket.listen(10)
         self._connection_list.append(self._socket)
-        self.public_key, self.private_key = rsa.newkeys(512)
+        #self.public_key, self.private_key = rsa.newkeys(512)
 
     def get_connection_list(self):
         return self._connection_list
@@ -78,7 +86,7 @@ class Server():
         list = data.split(" ", 1)
         receiver = list[0][1:]
         message = list[1]
-        logger.debug("Sending private message from: %s to %s" % sock, receiver)
+        logger.debug("Sending private message from: %s to %s" % (self._user_dict[sock], receiver))
         for conn, username in self._user_dict.items():
             if username == receiver:
                 conn.send("From " + self._user_dict[sock] + ": " + message)
@@ -99,10 +107,10 @@ class Server():
                         self.broadcast(sock, data, self._user_dict[sock])
                 # New user
                 else:
-                    list = data.split('<end>')
-                    self._user_dict[sock] = list[0]
-                    self._user_keys[sock] = rsa.PublicKey(list[1], list[2])
-                    self.broadcast_new_user(sock, list[0])
+                    #list = data.split('<end>')
+                    self._user_dict[sock] = data
+                    #self._user_keys[sock] = rsa.PublicKey(list[1], list[2])
+                    self.broadcast_new_user(sock, data)
                     self.send_user_list_and_history(sock)
             # User disconnected
             else:

@@ -2,6 +2,7 @@
 from abc import ABCMeta, abstractmethod
 
 
+# Decorator
 class IApp(object):
 
     __metaclass__ = ABCMeta
