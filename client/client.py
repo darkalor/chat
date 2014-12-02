@@ -82,7 +82,6 @@ class Client(Thread, IClient):
             for sock in read_sockets:
                 #incoming message from remote server
                 data = sock.recv(4096)
-                print data
                 if not data:
                     self.app.display('Disconnected from chat server', message_type=mt.ERROR)
                     sys.exit()

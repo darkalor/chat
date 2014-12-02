@@ -85,33 +85,3 @@ class TestClient(unittest.TestCase):
         self.client.process_data(data)
         self.assertEqual(self.app.display.call_count, 1)
         self.assertEqual(self.app.display.call_args[0][0], data)
-
-
-'''
-
-    def run(self):
-        try:
-            self.connect()
-            # TODO: move username later
-            #self.send(self.app.get_username() + '<end>' + str(self.public_key.n) + '<end>' + str(self.public_key.e))
-            self.send(self.app.get_username())
-        except Exception as e:
-            print e
-            self.app.display('Unable to connect', message_type=mt.ERROR)
-            sys.exit()
-
-        socket_list = [self._socket]
-        while 1:
-            # Get the list sockets which are readable
-            read_sockets, write_sockets, error_sockets = select.select(socket_list, [], [])
-
-            for sock in read_sockets:
-                #incoming message from remote server
-                data = sock.recv(4096)
-                print data
-                if not data:
-                    self.app.display('Disconnected from chat server', message_type=mt.ERROR)
-                    sys.exit()
-                else:
-                    self.process_data(data)
-'''
